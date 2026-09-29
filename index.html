@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <!-- กำหนดให้ขนาดหน้าจอพอดีกับหน้าจอมือถือ ไม่ขยายเกินขอบ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คู่มือการบูชาเฉพาะบุคคล - 1SBUCHA</title>
+  
+  <!-- โหลดชุดคำสั่ง LINE LIFF SDK v2 อย่างเป็นทางการ -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <!-- โหลดฟอนต์ Sarabun เพื่อความสวยงาม อ่านง่าย สบายตา -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  
+  <!-- ปรับแต่งหน้าตา (CSS) ธีมสีดำ-ทอง ดูเข้มขลังและพรีเมียม -->
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: #0f1115; /* พื้นหลังสีดำเข้ม */
+      color: #e6e6e6;            /* ตัวหนังสือสีขาวนวล */
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;         /* จำกัดความกว้างไม่ให้ยืดเกินไปบนแท็บเล็ต/คอม */
+      margin: auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .header h2 {
+      color: #d4af37;           /* สีทองมงคล */
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    /* กล่องการ์ดสำหรับเครื่องรางแต่ละชิ้น */
+    .card {
+      background: #1a1d24;      /* สีพื้นหลังการ์ด */
+      border: 1px solid #2a2e39;/* เส้นขอบสีเทาเข้ม */
+      border-radius: 14px;      /* มุมโค้งมน */
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* มิติเงา */
+    }
+    .card h3 {
+      color: #f3c644;           /* สีหัวข้อเครื่องราง */
+      margin-top: 0;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #2f3442;
+      padding-bottom: 8px;
+    }
+    .section-title {
+      font-weight: 600;
+      color: #ffffff;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    .section-content {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #cfcfcf;
+      white-space: pre-line;    /* ให้ขึ้นบรรทัดใหม่ตามที่พิมพ์ใน Google Sheets */
+    }
+    /* กล่องแสดงสถานะโหลด */
+    #status-box {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 15px;
+      color: #d4af37;
+    }
+    /* กล่องแสดง Error หากเกิดข้อผิดพลาด */
+    .error-box {
+      background: #3a1515;
+      border: 1px solid #ff4d4d;
+      color: #ff9999;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 13px;
+      text-align: left;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- จุดที่ 1: กล่องข้อความแจ้งสถานะระหว่างโหลดข้อมูล หรือแสดงข้อความล็อกเมื่อไม่มีสิทธิ์ -->
+    <div id="status-box">กำลังโหลดข้อมูล...</div>
+    
+    <!-- จุดที่ 2: พื้นที่แสดงเนื้อหาคู่มือ (ซ่อนไว้ก่อนจนกว่าจะตรวจสอบสิทธิ์ผ่าน) -->
+    <div id="content" style="display: none;">
+      <div class="header">
+        <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
+        <div id="user-greeting" style="color: #aaa; font-size: 14px;"></div>
+      </div>
+      <!-- รายการการ์ดเครื่องรางจะถูกสร้างขึ้นมาในแท็ก div นี้อัตโนมัติ -->
+      <div id="guide-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // ⚙️ ตั้งค่าข้อมูลเชื่อมต่อระบบ (ใส่ข้อมูลของคุณตรงนี้)
+    // =========================================================
+    const MY_LIFF_ID = "2011794620-dxoRmHEn"; // LIFF ID ของคุณ
+    
+    // ⚠️ นำ Web App URL ที่ได้จากการ Deploy ของ Google Apps Script มาใส่ตรงนี้
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
+
+    /**
+     * ฟังก์ชันหลักที่ทำงานทันทีเมื่อเปิดหน้าเว็บ
+     */
+    async function main() {
+      const statusBox = document.getElementById('status-box');
+      
+      try {
+        // ขั้นตอนที่ 1: เริ่มต้นระบบ LINE LIFF
+        statusBox.innerText = "กำลังเชื่อมต่อกับ LINE...";
+        await liff.init({ liffId: MY_LIFF_ID });
+
+        // ตรวจสอบว่าล็อกอิน LINE หรือยัง (ถ้าเปิดในแอป LINE จะล็อกอินให้อัตโนมัติ)
+        if (!liff.isLoggedIn()) {
+          statusBox.innerText = "กำลังนำเข้าสู่ระบบ LINE...";
+          liff.login();
+          return;
+        }
+
+        // ขั้นตอนที่ 2: ดึงข้อมูลโปรไฟล์เพื่ออ่านค่า LINE User ID
+        statusBox.innerText = "กำลังตรวจสอบตัวตนผู้ใช้งาน...";
+        const profile = await liff.getProfile();
+        const userId = profile.userId; // รหัส LINE User ID เฉพาะบุคคล
+
+        // ขั้นตอนที่ 3: ส่ง LINE User ID ไปสอบถามข้อมูลหลังบ้านที่ Google Apps Script
+        statusBox.innerText = "กำลังดึงข้อมูลคู่มือบูชาของคุณ...";
+        const response = await fetch(`${GAS_API_URL}?userId=${encodeURIComponent(userId)}`);
+        const res = await response.json();
+
+        // ขั้นตอนที่ 4: ตรวจสอบผลลัพธ์ที่ได้รับกลับมา
+        statusBox.style.display = 'none';
+
+        // กรณีไม่พบสิทธิ์ (ลูกค้าไม่ได้สั่งซื้อ หรือคนอื่นแอบกดลิงก์ที่ถูกส่งต่อมา)
+        if (!res || res.status !== 'success') {
+          statusBox.style.display = 'block';
+          statusBox.innerHTML = `
+            <div style="font-size: 44px; margin-bottom: 10px;">🔒</div>
+            <h3 style="color:#ffffff; margin-bottom: 8px;">ไม่พบสิทธิ์การเข้าถึงข้อมูล</h3>
+            <p style="color:#aaaaaa; font-size:13px; line-height: 1.6;">
+              ระบบอนุญาตให้เปิดดูเฉพาะผู้ที่สั่งบูชาเท่านั้น<br>
+              หากท่านสั่งบูชาแล้ว กรุณาแจ้งแอดมินทางแชทร้านค้าครับ<br>
+              <span style="font-size: 11px; color: #666;">(LINE ID: ${userId})</span>
+            </p>
+          `;
+          return;
+        }
+
+        // กรณีตรวจสอบผ่าน: แสดงชื่อลูกค้า
+        document.getElementById('user-greeting').innerText = `สำหรับ: ${res.customerName}`;
+        const container = document.getElementById('guide-list');
+        container.innerHTML = '';
+
+        // ขั้นตอนที่ 5: วนลูปสร้างการ์ดข้อมูลเครื่องรางแต่ละชิ้นที่ลูกค้าซื้อ
+        res.guides.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>✨ ${item.title}</h3>
+            <div class="section-title">📌 วิธีการใช้งานและการบูชา:</div>
+            <div class="section-content">${item.howToUse}</div>
+            <div class="section-title">🛡️ การเก็บรักษาและข้อควรระวัง:</div>
+            <div class="section-content">${item.howToCare}</div>
+          `;
+          container.appendChild(card);
+        });
+
+        // เปิดแสดงส่วนเนื้อหาทั้งหมด
+        document.getElementById('content').style.display = 'block';
+
+      } catch (err) {
+        // หากเกิดข้อผิดพลาดในการโหลด LIFF หรือ Network ให้แสดงกล่องสีแดง
+        statusBox.innerHTML = `
+          <div class="error-box">
+            <b>เกิดข้อผิดพลาด:</b><br>${err.message}
+          </div>
+        `;
+      }
+    }
+
+    // เริ่มการทำงาน
+    main();
+  </script>
+</body>
+</html>
