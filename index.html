@@ -1,5 +1,5 @@
 <!-- ==================================================================== -->
-<!-- ไฟล์: index.html (สำหรับฝั่ง GitHub Pages) -->
+<!-- ไฟล์: index.html (เวอร์ชันระบุจุดเกิด Error ละเอียด + ป้องกัน Cache) -->
 <!-- ==================================================================== -->
 <!DOCTYPE html>
 <html lang="th">
@@ -8,13 +8,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>คู่มือการบูชาเฉพาะบุคคล - 1SBUCHA</title>
   
-  <!-- นำเข้าชุดคำสั่ง LINE LIFF SDK v2 -->
+  <!-- โหลด LINE LIFF SDK v2 -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
-  <!-- นำเข้าฟอนต์ Sarabun จาก Google Fonts -->
+  <!-- ฟอนต์ Sarabun -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
   
-  <!-- ตกแต่งหน้าตาด้วย CSS โทนสีมืด-ทอง -->
   <style>
     body {
       font-family: 'Sarabun', sans-serif;
@@ -64,6 +63,179 @@
       color: #cfcfcf;
       white-space: pre-line;
     }
+    #status-box {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 15px;
+      color: #d4af37;
+    }
+    .error-box {
+      background: #3a1515;
+      border: 1px solid #ff4d4d;
+      color: #ff9999;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 13px;
+      text-align: left;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="status-box">กำลังเริ่มต้นระบบ...</div>
+    
+    <div id="content" style="display: none;">
+      <div class="header">
+        <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
+        <div id="user-greeting" style="color: #aaa; font-size: 14px;"></div>
+      </div>
+      <div id="guide-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================================================================
+    // ⚙️ ตัวแปรตั้งค่าระบบ (กรุณาตรวจเช็ก 2 บรรทัดนี้ให้ตรงกับของคุณ)
+    // ==================================================================
+    const MY_LIFF_ID = "2011794620-dxoRmHEn"; 
+    
+    // ⚠️ นำ Web App URL ที่ได้จาก Google Apps Script (ลงท้ายด้วย /exec) มาวางแทนที่ตรงนี้
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzpTqWu3uxzuJJX1c44BnKZxtA8tRedXASqEUGgHwo01nIQkTlck0qm-I7xKP6YUG0z/exec"; 
+
+    // ตัวแปรติดตามขั้นตอนเพื่อแจ้งจุดที่เกิด Error ได้แม่นยำ
+    let currentStep = "เริ่มต้นโหลดสคริปต์";
+
+    /**
+     * ฟังก์ชันส่งคำขอข้อมูลผ่าน JSONP (Script Tag)
+     */
+    function fetchJSONP(url) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'cb_' + Math.round(100000 * Math.random());
+        
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error(`Timeout: การเชื่อมต่อไปยัง Apps Script ใช้เวลานานเกินไป (URL ที่เรียก: ${url})`));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeoutId);
+          delete window[callbackName];
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          resolve(data);
+        };
+
+        const script = document.createElement('script');
+        const separator = url.indexOf('?') >= 0 ? '&' : '?';
+        script.src = `${url}${separator}callback=${callbackName}&_t=${Date.now()}`;
+        
+        script.onerror = function() {
+          cleanup();
+          reject(new Error(`ไม่สามารถโหลดสคริปต์จาก Apps Script ได้ (ตรวจสอบว่าตั้งค่า Deploy เป็น Anyone หรือยัง / URL: ${url})`));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
+    /**
+     * ฟังก์ชันหลัก
+     */
+    async function main() {
+      const statusBox = document.getElementById('status-box');
+      try {
+        // ดักกรณีลืมเปลี่ยน URL ในโค้ด
+        if (GAS_API_URL.includes("AKfycb...")) {
+          throw new Error("คุณยังไม่ได้เปลี่ยนค่าตัวแปร GAS_API_URL เป็น Web App URL จริงของคุณจาก Google Apps Script");
+        }
+
+        // ขั้นตอนที่ 1: ตรวจสอบและเชื่อมต่อ LINE LIFF
+        currentStep = "ขั้นตอนที่ 1: liff.init()";
+        statusBox.innerText = "กำลังเชื่อมต่อกับ LINE...";
+        await liff.init({ liffId: MY_LIFF_ID });
+
+        // ขั้นตอนที่ 2: ตรวจสอบสถานะการเข้าสู่ระบบ
+        currentStep = "ขั้นตอนที่ 2: liff.isLoggedIn()";
+        if (!liff.isLoggedIn()) {
+          statusBox.innerText = "กำลังนำเข้าสู่ระบบ LINE...";
+          liff.login();
+          return;
+        }
+
+        // ขั้นตอนที่ 3: ดึงข้อมูลโปรไฟล์ LINE
+        currentStep = "ขั้นตอนที่ 3: liff.getProfile()";
+        statusBox.innerText = "กำลังตรวจสอบตัวตน...";
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+
+        // ขั้นตอนที่ 4: ดึงข้อมูลจาก Google Sheets ผ่าน JSONP
+        currentStep = "ขั้นตอนที่ 4: ดึงข้อมูลจาก Google Apps Script";
+        statusBox.innerText = "กำลังดึงข้อมูลคู่มือบูชาของคุณ...";
+        
+        const res = await fetchJSONP(`${GAS_API_URL}?userId=${encodeURIComponent(userId)}`);
+
+        // ซ่อนข้อความโหลด
+        statusBox.style.display = 'none';
+
+        // กรณีตรวจสอบแล้วไม่มีสิทธิ์
+        if (!res || res.status !== 'success') {
+          statusBox.style.display = 'block';
+          statusBox.innerHTML = `
+            <div style="font-size: 44px; margin-bottom: 10px;">🔒</div>
+            <h3 style="color:#ffffff; margin-bottom: 8px;">ไม่พบสิทธิ์การเข้าถึงข้อมูล</h3>
+            <p style="color:#aaaaaa; font-size:13px; line-height: 1.6;">
+              ระบบอนุญาตให้เปิดดูเฉพาะผู้ที่สั่งบูชาเท่านั้น<br>
+              หากท่านสั่งบูชาแล้ว กรุณาแจ้งแอดมินทางแชทร้านค้าครับ<br>
+              <span style="font-size: 11px; color: #888;">(LINE ID ของคุณ: ${userId})</span>
+            </p>
+          `;
+          return;
+        }
+
+        // กรณีมีสิทธิ์: แสดงผลการ์ดเครื่องราง
+        document.getElementById('user-greeting').innerText = `สำหรับ: ${res.customerName}`;
+        const container = document.getElementById('guide-list');
+        container.innerHTML = '';
+
+        res.guides.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>✨ ${item.title}</h3>
+            <div class="section-title">📌 วิธีการใช้งานและการบูชา:</div>
+            <div class="section-content">${item.howToUse}</div>
+            <div class="section-title">🛡️ การเก็บรักษาและข้อควรระวัง:</div>
+            <div class="section-content">${item.howToCare}</div>
+          `;
+          container.appendChild(card);
+        });
+
+        document.getElementById('content').style.display = 'block';
+
+      } catch (err) {
+        // แสดงจุดที่เกิดปัญหาพร้อมข้อความ Error ละเอียด
+        statusBox.innerHTML = `
+          <div class="error-box">
+            <b>เกิดข้อผิดพลาดที่ [${currentStep}]:</b><br>
+            ${err.message || err.toString()}<br><br>
+            <small style="color: #ccc;">URL ปัจจุบัน: ${window.location.href}</small>
+          </div>
+        `;
+      }
+    }
+
+    // เริ่มต้นทำงาน
+    main();
+  </script>
+</body>
+</html>    }
     #status-box {
       text-align: center;
       margin-top: 50px;
