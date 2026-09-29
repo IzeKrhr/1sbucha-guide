@@ -1,29 +1,28 @@
 <!-- ==================================================================== -->
-<!-- ไฟล์: index.html (แก้ไขโค้ดตกขอบ + ระบบล็อกจอดำเมื่อแคปหน้าจอ/สลับแอป) -->
+<!-- ไฟล์: index.html (แก้ปัญหา CSS ตกขอบ + เปิดช่องกรอกเบอร์โทรทันที) -->
 <!-- ==================================================================== -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- ป้องกัน Browser แคชไฟล์เก่า -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>คู่มือการบูชาเฉพาะบุคคล - 1SBUCHA</title>
   
-  <!-- โหลด LINE LIFF SDK v2 -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  
-  <!-- โหลดฟอนต์ Sarabun -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
   
   <style>
-    /* ============================================================ */
-    /* 1. ระบบความปลอดภัย: ป้องกันการคัดลอก และคลิกขวา */
-    /* ============================================================ */
+    /* 1. ป้องกันการคัดลอกข้อความและคลิกขวา */
     * {
-      -webkit-user-select: none; /* ห้ามคลุมดำข้อความบน Safari/iOS */
+      -webkit-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
       user-select: none;
-      -webkit-touch-callout: none; /* ปิดเมนูค้างบนมือถือ */
+      -webkit-touch-callout: none;
     }
 
     body {
@@ -89,6 +88,7 @@
       color: #d4af37;
     }
 
+    /* กล่องฟอร์มกรอกเบอร์โทรศัพท์ */
     .register-box {
       background: #1a1d24;
       border: 1px solid #d4af37;
@@ -150,9 +150,7 @@
       margin-top: 12px;
     }
 
-    /* ============================================================ */
-    /* 2. ม่านดำสำหรับป้องกันการแคปหน้าจอ (Blackout Curtain) */
-    /* ============================================================ */
+    /* 2. ม่านจอดำเมื่อพยายามแคปหน้าจอหรือสลับแอป */
     #blackout-curtain {
       display: none;
       position: fixed;
@@ -164,7 +162,6 @@
       z-index: 999999;
     }
 
-    /* กรณีพยายามสั่งพิมพ์หน้าเว็บ หรือ Save เป็น PDF ให้เป็นสีดำล้วน */
     @media print {
       body {
         background-color: #000000 !important;
@@ -177,13 +174,13 @@
   </style>
 </head>
 <body oncontextmenu="return false;">
-  <!-- ม่านดำบังตาเมื่อตรวจพบการบันทึกภาพ/สลับหน้าต่าง -->
+  <!-- ม่านจอดำป้องกันการแคปภาพ -->
   <div id="blackout-curtain"></div>
 
   <div class="container">
     <div id="status-box">กำลังเริ่มต้นระบบ...</div>
 
-    <!-- ส่วนกรอกเบอร์โทรยืนยันสิทธิ์ครั้งแรก -->
+    <!-- ส่วนกรอกเบอร์โทรยืนยันสิทธิ์ -->
     <div id="register-section" style="display: none;">
       <div class="register-box">
         <div style="font-size: 40px; margin-bottom: 8px;">📱</div>
@@ -197,7 +194,7 @@
       </div>
     </div>
     
-    <!-- ส่วนแสดงคู่มือเมื่อยืนยันสิทธิ์ผ่าน -->
+    <!-- ส่วนแสดงคู่มือเมื่อมีสิทธิ์แล้ว -->
     <div id="content" style="display: none;">
       <div class="header">
         <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
@@ -214,36 +211,22 @@
     const MY_LIFF_ID = "2011794620-dxoRmHEn"; 
     
     // ⚠️ นำ Web App URL ของคุณ (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzWzSaCPVAnBUg5AGbz6C_wGQdMyoUKftM2-hQBTqVgIvYMynHv1WHEU_t2uWieOAbY/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyP_XWE3gjb7Pa58YdVoyIXZwLTHLDg2ZgnQXd6DYNheP_kYSvwaIRkmFFWpAAuRMa0/exec"; 
 
     let globalUserId = "";
 
-    // ==================================================================
-    // 🛡️ ระบบป้องกันการแคปหน้าจอ (ทำงานทันทีเมื่อหน้าจอหลุดโฟกัส)
-    // ==================================================================
+    // ระบบล็อกจอดำเมื่อหลุดโฟกัส / แคปจอ
     const curtain = document.getElementById('blackout-curtain');
-
-    function hideScreen() {
-      curtain.style.display = 'block';
-    }
-
-    function showScreen() {
-      curtain.style.display = 'none';
-    }
-
-    // เมื่อผู้ใช้กดปุ่มแคปจอหรือสลับแอป หน้าจอจะกลายเป็นสีดำสนิททันที
+    function hideScreen() { curtain.style.display = 'block'; }
+    function showScreen() { curtain.style.display = 'none'; }
     window.addEventListener('blur', hideScreen);
     window.addEventListener('focus', showScreen);
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        hideScreen();
-      } else {
-        showScreen();
-      }
+      if (document.hidden) hideScreen(); else showScreen();
     });
 
     /**
-     * ดึงข้อมูลผ่าน JSONP (ข้ามข้อจำกัด Safari/iPhone)
+     * ดึงข้อมูลผ่าน JSONP ข้ามข้อจำกัด Safari
      */
     function fetchJSONP(url) {
       return new Promise((resolve, reject) => {
@@ -280,7 +263,7 @@
     }
 
     /**
-     * เริ่มต้นการทำงานของหน้าเว็บ
+     * เริ่มต้นการทำงาน
      */
     async function main() {
       const statusBox = document.getElementById('status-box');
@@ -299,26 +282,28 @@
 
         statusBox.innerText = "กำลังตรวจสอบสิทธิ์...";
         
-        // ค้นหา LINE ID จากคอลัมน์ B
+        // สอบถามสิทธิ์ไปยัง Google Apps Script
         const res = await fetchJSONP(`${GAS_API_URL}?action=getGuides&userId=${encodeURIComponent(globalUserId)}`);
         statusBox.style.display = 'none';
 
         if (res && res.status === 'success') {
+          // หากมีสิทธิ์แล้ว ให้แสดงคู่มือทันที
           renderGuides(res);
-        } else if (res && res.status === 'not_registered') {
-          // หากยังไม่เคยผูก LINE ID ให้เปิดหน้าจอกรอกเบอร์โทร
-          document.getElementById('register-section').style.display = 'block';
         } else {
-          showErrorBox(res.message || 'ไม่สามารถดึงข้อมูลได้');
+          // ⚠️ หากไม่พบ LINE ID ในชีท ไม่ว่าสถานะใด ให้เปิดหน้าจอกรอกเบอร์โทรทันที
+          document.getElementById('register-section').style.display = 'block';
         }
 
       } catch (err) {
-        showErrorBox(err.message);
+        // หากเชื่อมต่อผิดพลาด ให้เปิดหน้าจอกรอกเบอร์โทรเป็นทางเลือกสำรองทันที
+        statusBox.style.display = 'none';
+        document.getElementById('register-section').style.display = 'block';
+        document.getElementById('register-error').innerText = 'ระบบกำลังเปิดการยืนยันด้วยเบอร์โทรศัพท์สำรอง';
       }
     }
 
     /**
-     * ฟังก์ชันผูกเบอร์โทรเข้ากับคอลัมน์ B
+     * ส่งเบอร์โทรศัพท์ไปบันทึกลงในคอลัมน์ B
      */
     async function submitPhone() {
       const phoneInput = document.getElementById('input-phone');
@@ -343,6 +328,7 @@
         submitBtn.innerText = 'ยืนยันเบอร์โทรศัพท์';
 
         if (res && res.status === 'success') {
+          // ผูกสำเร็จ ซ่อนฟอร์ม แล้วแสดงการ์ดเครื่องราง
           document.getElementById('register-section').style.display = 'none';
           renderGuides(res);
         } else {
@@ -355,9 +341,6 @@
       }
     }
 
-    /**
-     * แสดงการ์ดข้อมูลเครื่องราง
-     */
     function renderGuides(res) {
       document.getElementById('user-greeting').innerText = `สำหรับ: คุณ${res.customerName}`;
       const container = document.getElementById('guide-list');
@@ -379,355 +362,6 @@
       document.getElementById('content').style.display = 'block';
     }
 
-    function showErrorBox(msg) {
-      const statusBox = document.getElementById('status-box');
-      statusBox.style.display = 'block';
-      statusBox.innerHTML = `
-        <div style="background:#3a1515; border:1px solid #ff4d4d; color:#ff9999; padding:15px; border-radius:10px; margin-top:20px; font-size:13px; text-align:left;">
-          <b>เกิดข้อผิดพลาด:</b><br>${msg}
-        </div>
-      `;
-    }
-
-    main();
-  </script>
-</body>
-</html>      white-space: pre-line;
-    }
-    #status-box {
-      text-align: center;
-      margin-top: 50px;
-      font-size: 15px;
-      color: #d4af37;
-    }
-    .error-box {
-      background: #3a1515;
-      border: 1px solid #ff4d4d;
-      color: #ff9999;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
-      font-size: 13px;
-      text-align: left;
-      line-height: 1.6;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div id="status-box">กำลังเริ่มต้นระบบ...</div>
-    
-    <div id="content" style="display: none;">
-      <div class="header">
-        <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
-        <div id="user-greeting" style="color: #aaa; font-size: 14px;"></div>
-      </div>
-      <div id="guide-list"></div>
-    </div>
-  </div>
-
-  <script>
-    // ==================================================================
-    // ⚙️ ตัวแปรตั้งค่าระบบ (กรุณาตรวจเช็ก 2 บรรทัดนี้ให้ตรงกับของคุณ)
-    // ==================================================================
-    const MY_LIFF_ID = "2011794620-dxoRmHEn"; 
-    
-    // ⚠️ นำ Web App URL ที่ได้จาก Google Apps Script (ลงท้ายด้วย /exec) มาวางแทนที่ตรงนี้
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzpTqWu3uxzuJJX1c44BnKZxtA8tRedXASqEUGgHwo01nIQkTlck0qm-I7xKP6YUG0z/exec"; 
-
-    // ตัวแปรติดตามขั้นตอนเพื่อแจ้งจุดที่เกิด Error ได้แม่นยำ
-    let currentStep = "เริ่มต้นโหลดสคริปต์";
-
-    /**
-     * ฟังก์ชันส่งคำขอข้อมูลผ่าน JSONP (Script Tag)
-     */
-    function fetchJSONP(url) {
-      return new Promise((resolve, reject) => {
-        const callbackName = 'cb_' + Math.round(100000 * Math.random());
-        
-        const timeoutId = setTimeout(() => {
-          cleanup();
-          reject(new Error(`Timeout: การเชื่อมต่อไปยัง Apps Script ใช้เวลานานเกินไป (URL ที่เรียก: ${url})`));
-        }, 15000);
-
-        function cleanup() {
-          clearTimeout(timeoutId);
-          delete window[callbackName];
-          if (script && script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-        }
-
-        window[callbackName] = function(data) {
-          cleanup();
-          resolve(data);
-        };
-
-        const script = document.createElement('script');
-        const separator = url.indexOf('?') >= 0 ? '&' : '?';
-        script.src = `${url}${separator}callback=${callbackName}&_t=${Date.now()}`;
-        
-        script.onerror = function() {
-          cleanup();
-          reject(new Error(`ไม่สามารถโหลดสคริปต์จาก Apps Script ได้ (ตรวจสอบว่าตั้งค่า Deploy เป็น Anyone หรือยัง / URL: ${url})`));
-        };
-
-        document.body.appendChild(script);
-      });
-    }
-
-    /**
-     * ฟังก์ชันหลัก
-     */
-    async function main() {
-      const statusBox = document.getElementById('status-box');
-      try {
-        // ดักกรณีลืมเปลี่ยน URL ในโค้ด
-        if (GAS_API_URL.includes("AKfycb...")) {
-          throw new Error("คุณยังไม่ได้เปลี่ยนค่าตัวแปร GAS_API_URL เป็น Web App URL จริงของคุณจาก Google Apps Script");
-        }
-
-        // ขั้นตอนที่ 1: ตรวจสอบและเชื่อมต่อ LINE LIFF
-        currentStep = "ขั้นตอนที่ 1: liff.init()";
-        statusBox.innerText = "กำลังเชื่อมต่อกับ LINE...";
-        await liff.init({ liffId: MY_LIFF_ID });
-
-        // ขั้นตอนที่ 2: ตรวจสอบสถานะการเข้าสู่ระบบ
-        currentStep = "ขั้นตอนที่ 2: liff.isLoggedIn()";
-        if (!liff.isLoggedIn()) {
-          statusBox.innerText = "กำลังนำเข้าสู่ระบบ LINE...";
-          liff.login();
-          return;
-        }
-
-        // ขั้นตอนที่ 3: ดึงข้อมูลโปรไฟล์ LINE
-        currentStep = "ขั้นตอนที่ 3: liff.getProfile()";
-        statusBox.innerText = "กำลังตรวจสอบตัวตน...";
-        const profile = await liff.getProfile();
-        const userId = profile.userId;
-
-        // ขั้นตอนที่ 4: ดึงข้อมูลจาก Google Sheets ผ่าน JSONP
-        currentStep = "ขั้นตอนที่ 4: ดึงข้อมูลจาก Google Apps Script";
-        statusBox.innerText = "กำลังดึงข้อมูลคู่มือบูชาของคุณ...";
-        
-        const res = await fetchJSONP(`${GAS_API_URL}?userId=${encodeURIComponent(userId)}`);
-
-        // ซ่อนข้อความโหลด
-        statusBox.style.display = 'none';
-
-        // กรณีตรวจสอบแล้วไม่มีสิทธิ์
-        if (!res || res.status !== 'success') {
-          statusBox.style.display = 'block';
-          statusBox.innerHTML = `
-            <div style="font-size: 44px; margin-bottom: 10px;">🔒</div>
-            <h3 style="color:#ffffff; margin-bottom: 8px;">ไม่พบสิทธิ์การเข้าถึงข้อมูล</h3>
-            <p style="color:#aaaaaa; font-size:13px; line-height: 1.6;">
-              ระบบอนุญาตให้เปิดดูเฉพาะผู้ที่สั่งบูชาเท่านั้น<br>
-              หากท่านสั่งบูชาแล้ว กรุณาแจ้งแอดมินทางแชทร้านค้าครับ<br>
-              <span style="font-size: 11px; color: #888;">(LINE ID ของคุณ: ${userId})</span>
-            </p>
-          `;
-          return;
-        }
-
-        // กรณีมีสิทธิ์: แสดงผลการ์ดเครื่องราง
-        document.getElementById('user-greeting').innerText = `สำหรับ: ${res.customerName}`;
-        const container = document.getElementById('guide-list');
-        container.innerHTML = '';
-
-        res.guides.forEach(item => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <h3>✨ ${item.title}</h3>
-            <div class="section-title">📌 วิธีการใช้งานและการบูชา:</div>
-            <div class="section-content">${item.howToUse}</div>
-            <div class="section-title">🛡️ การเก็บรักษาและข้อควรระวัง:</div>
-            <div class="section-content">${item.howToCare}</div>
-          `;
-          container.appendChild(card);
-        });
-
-        document.getElementById('content').style.display = 'block';
-
-      } catch (err) {
-        // แสดงจุดที่เกิดปัญหาพร้อมข้อความ Error ละเอียด
-        statusBox.innerHTML = `
-          <div class="error-box">
-            <b>เกิดข้อผิดพลาดที่ [${currentStep}]:</b><br>
-            ${err.message || err.toString()}<br><br>
-            <small style="color: #ccc;">URL ปัจจุบัน: ${window.location.href}</small>
-          </div>
-        `;
-      }
-    }
-
-    // เริ่มต้นทำงาน
-    main();
-  </script>
-</body>
-</html>    }
-    #status-box {
-      text-align: center;
-      margin-top: 50px;
-      font-size: 15px;
-      color: #d4af37;
-    }
-    .error-box {
-      background: #3a1515;
-      border: 1px solid #ff4d4d;
-      color: #ff9999;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
-      font-size: 13px;
-      text-align: left;
-      line-height: 1.5;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <!-- กล่องแสดงสถานะการโหลดข้อมูล และแสดงกรณีไม่มีสิทธิ์ -->
-    <div id="status-box">กำลังโหลดข้อมูล...</div>
-    
-    <!-- ส่วนแสดงผลรายการคู่มือ (เริ่มต้นซ่อนไว้) -->
-    <div id="content" style="display: none;">
-      <div class="header">
-        <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
-        <div id="user-greeting" style="color: #aaa; font-size: 14px;"></div>
-      </div>
-      <div id="guide-list"></div>
-    </div>
-  </div>
-
-  <script>
-    // ==================================================================
-    // ⚙️ ตัวแปรตั้งค่าระบบ
-    // ==================================================================
-    const MY_LIFF_ID = "2011794620-dxoRmHEn"; // รหัส LIFF ID ของร้าน
-    
-    // URL Web App จาก Google Apps Script (ต้องเป็น URL จากการ Deploy ล่าสุดที่ลงท้ายด้วย /exec)
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby0LtFkcGlJDrok6QsATYiseL_b1-AjieqlGbHU4oEBjZwrwDiXYdZZmtVIQHAvhiUs/exec"; 
-
-    /**
-     * ฟังก์ชันส่งคำขอข้อมูลด้วยเทคนิค JSONP
-     * ป้องกันปัญหา Safari / iOS WebKit บล็อกการ Redirect ข้ามโดเมน
-     */
-    function fetchJSONP(url) {
-      return new Promise((resolve, reject) => {
-        // สร้างชื่อฟังก์ชัน callback แบบสุ่มเพื่อไม่ให้ซ้ำกัน
-        const callbackName = 'cb_' + Math.round(100000 * Math.random());
-        
-        // กำหนด Timeout กรณีเชื่อมต่อไม่สำเร็จภายใน 12 วินาที
-        const timeoutId = setTimeout(() => {
-          cleanup();
-          reject(new Error('การเชื่อมต่อหมดเวลา (Timeout) กรุณาตรวจสอบการตั้งค่า Deploy ของ Google Apps Script'));
-        }, 12000);
-
-        // ฟังก์ชันล้างตัวแปรและแท็กออกจากหน่วยความจำ
-        function cleanup() {
-          clearTimeout(timeoutId);
-          delete window[callbackName];
-          if (script && script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-        }
-
-        // ฟังก์ชันรับข้อมูลกลับ
-        window[callbackName] = function(data) {
-          cleanup();
-          resolve(data);
-        };
-
-        // สร้างแท็ก <script> เพื่อยิงคำขอไปยัง Google Apps Script
-        const script = document.createElement('script');
-        const separator = url.indexOf('?') >= 0 ? '&' : '?';
-        script.src = `${url}${separator}callback=${callbackName}`;
-        
-        script.onerror = function() {
-          cleanup();
-          reject(new Error('ไม่สามารถเชื่อมต่อกับ Google Apps Script ได้ กรุณาตรวจสอบ URL หรือสิทธิ์การเข้าถึง (ต้องตั้งเป็น Anyone)'));
-        };
-
-        document.body.appendChild(script);
-      });
-    }
-
-    /**
-     * ฟังก์ชันหลักที่ทำงานเมื่อเปิดหน้าเว็บ
-     */
-    async function main() {
-      const statusBox = document.getElementById('status-box');
-      try {
-        statusBox.innerText = "กำลังเชื่อมต่อกับ LINE...";
-        await liff.init({ liffId: MY_LIFF_ID });
-
-        // ตรวจสอบสถานะการเข้าสู่ระบบ LINE
-        if (!liff.isLoggedIn()) {
-          statusBox.innerText = "กำลังนำเข้าสู่ระบบ LINE...";
-          liff.login();
-          return;
-        }
-
-        statusBox.innerText = "กำลังตรวจสอบตัวตน...";
-        const profile = await liff.getProfile();
-        const userId = profile.userId;
-
-        statusBox.innerText = "กำลังดึงข้อมูลคู่มือบูชาของคุณ...";
-        
-        // เรียกใช้งานฟังก์ชัน JSONP ส่ง LINE User ID ไปสอบถามข้อมูล
-        const res = await fetchJSONP(`${GAS_API_URL}?userId=${encodeURIComponent(userId)}`);
-
-        statusBox.style.display = 'none';
-
-        // กรณีไม่พบสิทธิ์การเข้าถึง หรือผู้ใช้อื่นเปิดลิงก์ที่ถูกส่งต่อ
-        if (!res || res.status !== 'success') {
-          statusBox.style.display = 'block';
-          statusBox.innerHTML = `
-            <div style="font-size: 44px; margin-bottom: 10px;">🔒</div>
-            <h3 style="color:#ffffff; margin-bottom: 8px;">ไม่พบสิทธิ์การเข้าถึงข้อมูล</h3>
-            <p style="color:#aaaaaa; font-size:13px; line-height: 1.6;">
-              ระบบอนุญาตให้เปิดดูเฉพาะผู้ที่สั่งบูชาเท่านั้น<br>
-              หากท่านสั่งบูชาแล้ว กรุณาแจ้งแอดมินทางแชทร้านค้าค่ะ<br>
-              <span style="font-size: 11px; color: #888;">(LINE ID ของคุณ: ${userId})</span>
-            </p>
-          `;
-          return;
-        }
-
-        // กรณีตรวจสอบสิทธิ์ผ่าน แสดงชื่อลูกค้าและรายการเครื่องราง
-        document.getElementById('user-greeting').innerText = `สำหรับ: ${res.customerName}`;
-        const container = document.getElementById('guide-list');
-        container.innerHTML = '';
-
-        // วนลูปสร้างการ์ดข้อมูลเครื่องรางตามรายการที่ซื้อ
-        res.guides.forEach(item => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <h3>✨ ${item.title}</h3>
-            <div class="section-title">📌 วิธีการใช้งานและการบูชา:</div>
-            <div class="section-content">${item.howToUse}</div>
-            <div class="section-title">🛡️ การเก็บรักษาและข้อควรระวัง:</div>
-            <div class="section-content">${item.howToCare}</div>
-          `;
-          container.appendChild(card);
-        });
-
-        // แสดงผลหน้าต่างเนื้อหา
-        document.getElementById('content').style.display = 'block';
-
-      } catch (err) {
-        statusBox.innerHTML = `
-          <div class="error-box">
-            <b>เกิดข้อผิดพลาด:</b><br>${err.message}
-          </div>
-        `;
-      }
-    }
-
-    // เริ่มการทำงานของระบบ
     main();
   </script>
 </body>
