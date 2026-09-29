@@ -1,5 +1,5 @@
 <!-- ==================================================================== -->
-<!-- ไฟล์: index.html (เวอร์ชันระบุจุดเกิด Error ละเอียด + ป้องกัน Cache) -->
+<!-- ไฟล์: index.html (แก้ไขโค้ดตกขอบ + ระบบล็อกจอดำเมื่อแคปหน้าจอ/สลับแอป) -->
 <!-- ==================================================================== -->
 <!DOCTYPE html>
 <html lang="th">
@@ -11,10 +11,21 @@
   <!-- โหลด LINE LIFF SDK v2 -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
-  <!-- ฟอนต์ Sarabun -->
+  <!-- โหลดฟอนต์ Sarabun -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
   
   <style>
+    /* ============================================================ */
+    /* 1. ระบบความปลอดภัย: ป้องกันการคัดลอก และคลิกขวา */
+    /* ============================================================ */
+    * {
+      -webkit-user-select: none; /* ห้ามคลุมดำข้อความบน Safari/iOS */
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none; /* ปิดเมนูค้างบนมือถือ */
+    }
+
     body {
       font-family: 'Sarabun', sans-serif;
       background-color: #0f1115;
@@ -22,19 +33,23 @@
       margin: 0;
       padding: 20px;
     }
+
     .container {
       max-width: 500px;
       margin: auto;
     }
+
     .header {
       text-align: center;
       margin-bottom: 24px;
     }
+
     .header h2 {
       color: #d4af37;
       margin-bottom: 6px;
       font-weight: 600;
     }
+
     .card {
       background: #1a1d24;
       border: 1px solid #2a2e39;
@@ -43,6 +58,7 @@
       margin-bottom: 18px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
+
     .card h3 {
       color: #f3c644;
       margin-top: 0;
@@ -50,6 +66,7 @@
       border-bottom: 1px solid #2f3442;
       padding-bottom: 8px;
     }
+
     .section-title {
       font-weight: 600;
       color: #ffffff;
@@ -57,11 +74,325 @@
       margin-bottom: 4px;
       font-size: 14px;
     }
+
     .section-content {
       font-size: 13.5px;
       line-height: 1.6;
       color: #cfcfcf;
       white-space: pre-line;
+    }
+
+    #status-box {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 15px;
+      color: #d4af37;
+    }
+
+    .register-box {
+      background: #1a1d24;
+      border: 1px solid #d4af37;
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      margin-top: 30px;
+      box-shadow: 0 4px 16px rgba(212,175,55,0.15);
+    }
+
+    .register-box h3 {
+      color: #f3c644;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .register-box p {
+      color: #b0b0b0;
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .input-phone {
+      width: 85%;
+      padding: 12px 14px;
+      font-size: 16px;
+      text-align: center;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #0f1115;
+      color: #fff;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      outline: none;
+    }
+
+    .btn-submit {
+      width: 90%;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #d4af37, #aa820a);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-submit:disabled {
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .error-text {
+      color: #ff6b6b;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* ============================================================ */
+    /* 2. ม่านดำสำหรับป้องกันการแคปหน้าจอ (Blackout Curtain) */
+    /* ============================================================ */
+    #blackout-curtain {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+      z-index: 999999;
+    }
+
+    /* กรณีพยายามสั่งพิมพ์หน้าเว็บ หรือ Save เป็น PDF ให้เป็นสีดำล้วน */
+    @media print {
+      body {
+        background-color: #000000 !important;
+        color: #000000 !important;
+      }
+      .container {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+  <!-- ม่านดำบังตาเมื่อตรวจพบการบันทึกภาพ/สลับหน้าต่าง -->
+  <div id="blackout-curtain"></div>
+
+  <div class="container">
+    <div id="status-box">กำลังเริ่มต้นระบบ...</div>
+
+    <!-- ส่วนกรอกเบอร์โทรยืนยันสิทธิ์ครั้งแรก -->
+    <div id="register-section" style="display: none;">
+      <div class="register-box">
+        <div style="font-size: 40px; margin-bottom: 8px;">📱</div>
+        <h3>ยืนยันสิทธิ์การเข้าถึงคู่มือ</h3>
+        <p>กรุณากรอก <b>เบอร์โทรศัพท์</b> ที่ใช้ในการสั่งซื้อ<br>เพื่อเปิดใช้งานคู่มือบูชาประจำตัวของคุณ</p>
+        
+        <input type="tel" id="input-phone" class="input-phone" placeholder="เช่น 0839028526" maxlength="10">
+        <br>
+        <button id="btn-submit" class="btn-submit" onclick="submitPhone()">ยืนยันเบอร์โทรศัพท์</button>
+        <div id="register-error" class="error-text"></div>
+      </div>
+    </div>
+    
+    <!-- ส่วนแสดงคู่มือเมื่อยืนยันสิทธิ์ผ่าน -->
+    <div id="content" style="display: none;">
+      <div class="header">
+        <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
+        <div id="user-greeting" style="color: #aaa; font-size: 14px;"></div>
+      </div>
+      <div id="guide-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================================================================
+    // ⚙️ ตัวแปรตั้งค่าระบบ
+    // ==================================================================
+    const MY_LIFF_ID = "2011794620-dxoRmHEn"; 
+    
+    // ⚠️ นำ Web App URL ของคุณ (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzWzSaCPVAnBUg5AGbz6C_wGQdMyoUKftM2-hQBTqVgIvYMynHv1WHEU_t2uWieOAbY/exec"; 
+
+    let globalUserId = "";
+
+    // ==================================================================
+    // 🛡️ ระบบป้องกันการแคปหน้าจอ (ทำงานทันทีเมื่อหน้าจอหลุดโฟกัส)
+    // ==================================================================
+    const curtain = document.getElementById('blackout-curtain');
+
+    function hideScreen() {
+      curtain.style.display = 'block';
+    }
+
+    function showScreen() {
+      curtain.style.display = 'none';
+    }
+
+    // เมื่อผู้ใช้กดปุ่มแคปจอหรือสลับแอป หน้าจอจะกลายเป็นสีดำสนิททันที
+    window.addEventListener('blur', hideScreen);
+    window.addEventListener('focus', showScreen);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        hideScreen();
+      } else {
+        showScreen();
+      }
+    });
+
+    /**
+     * ดึงข้อมูลผ่าน JSONP (ข้ามข้อจำกัด Safari/iPhone)
+     */
+    function fetchJSONP(url) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'cb_' + Math.round(100000 * Math.random());
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Timeout: การเชื่อมต่อใช้เวลานานเกินไป'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeoutId);
+          delete window[callbackName];
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          resolve(data);
+        };
+
+        const script = document.createElement('script');
+        const separator = url.indexOf('?') >= 0 ? '&' : '?';
+        script.src = `${url}${separator}callback=${callbackName}&_t=${Date.now()}`;
+        
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('ไม่สามารถเชื่อมต่อกับ Google Apps Script ได้'));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
+    /**
+     * เริ่มต้นการทำงานของหน้าเว็บ
+     */
+    async function main() {
+      const statusBox = document.getElementById('status-box');
+      try {
+        statusBox.innerText = "กำลังเชื่อมต่อกับ LINE...";
+        await liff.init({ liffId: MY_LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          statusBox.innerText = "กำลังนำเข้าสู่ระบบ LINE...";
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        globalUserId = profile.userId;
+
+        statusBox.innerText = "กำลังตรวจสอบสิทธิ์...";
+        
+        // ค้นหา LINE ID จากคอลัมน์ B
+        const res = await fetchJSONP(`${GAS_API_URL}?action=getGuides&userId=${encodeURIComponent(globalUserId)}`);
+        statusBox.style.display = 'none';
+
+        if (res && res.status === 'success') {
+          renderGuides(res);
+        } else if (res && res.status === 'not_registered') {
+          // หากยังไม่เคยผูก LINE ID ให้เปิดหน้าจอกรอกเบอร์โทร
+          document.getElementById('register-section').style.display = 'block';
+        } else {
+          showErrorBox(res.message || 'ไม่สามารถดึงข้อมูลได้');
+        }
+
+      } catch (err) {
+        showErrorBox(err.message);
+      }
+    }
+
+    /**
+     * ฟังก์ชันผูกเบอร์โทรเข้ากับคอลัมน์ B
+     */
+    async function submitPhone() {
+      const phoneInput = document.getElementById('input-phone');
+      const errorDiv = document.getElementById('register-error');
+      const submitBtn = document.getElementById('btn-submit');
+      const phoneVal = phoneInput.value.trim();
+
+      errorDiv.innerText = '';
+
+      if (!phoneVal || phoneVal.length < 9) {
+        errorDiv.innerText = 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'กำลังตรวจสอบข้อมูล...';
+
+      try {
+        const res = await fetchJSONP(`${GAS_API_URL}?action=registerPhone&phone=${encodeURIComponent(phoneVal)}&userId=${encodeURIComponent(globalUserId)}`);
+        
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'ยืนยันเบอร์โทรศัพท์';
+
+        if (res && res.status === 'success') {
+          document.getElementById('register-section').style.display = 'none';
+          renderGuides(res);
+        } else {
+          errorDiv.innerText = res.message || 'ไม่พบข้อมูลคำสั่งซื้อที่ตรงกับเบอร์นี้';
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'ยืนยันเบอร์โทรศัพท์';
+        errorDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง';
+      }
+    }
+
+    /**
+     * แสดงการ์ดข้อมูลเครื่องราง
+     */
+    function renderGuides(res) {
+      document.getElementById('user-greeting').innerText = `สำหรับ: คุณ${res.customerName}`;
+      const container = document.getElementById('guide-list');
+      container.innerHTML = '';
+
+      res.guides.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3>✨ ${item.title}</h3>
+          <div class="section-title">📌 วิธีการใช้งานและการบูชา:</div>
+          <div class="section-content">${item.howToUse}</div>
+          <div class="section-title">🛡️ การเก็บรักษาและข้อควรระวัง:</div>
+          <div class="section-content">${item.howToCare}</div>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('content').style.display = 'block';
+    }
+
+    function showErrorBox(msg) {
+      const statusBox = document.getElementById('status-box');
+      statusBox.style.display = 'block';
+      statusBox.innerHTML = `
+        <div style="background:#3a1515; border:1px solid #ff4d4d; color:#ff9999; padding:15px; border-radius:10px; margin-top:20px; font-size:13px; text-align:left;">
+          <b>เกิดข้อผิดพลาด:</b><br>${msg}
+        </div>
+      `;
+    }
+
+    main();
+  </script>
+</body>
+</html>      white-space: pre-line;
     }
     #status-box {
       text-align: center;
