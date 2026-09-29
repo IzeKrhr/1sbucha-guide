@@ -1,21 +1,25 @@
 <!-- ==================================================================== -->
-<!-- ไฟล์: index.html (แสดงผล 4 หัวข้อ + ระบบป้องกันการแคปหน้าจอคอมและมือถือ) -->
+<!-- ไฟล์: index.html (อัปเดต URL GAS จริง + เปลี่ยนตัวอย่างเบอร์ 0123456789) -->
 <!-- ==================================================================== -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <!-- ป้องกันไม่ให้เบราว์เซอร์แคชหน้าเว็บเดิม -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>คู่มือการบูชาเฉพาะบุคคล - 1SBUCHA</title>
   
+  <!-- โหลดชุดคำสั่ง LINE LIFF SDK v2 -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <!-- โหลดฟอนต์ Sarabun จาก Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
   
   <style>
-    /* 1. ป้องกันการคลุมดำ คัดลอกข้อความ ลากรูป และคลิกขวา */
+    /* 1. ป้องกันการคลุมดำ คัดลอกข้อความ ลากรูปภาพ และเปิดเมนูคลิกขวา */
     * {
       -webkit-user-select: none !important;
       -moz-user-select: none !important;
@@ -53,6 +57,7 @@
       font-weight: 600;
     }
 
+    /* กล่องการ์ดสำหรับเครื่องรางแต่ละชิ้น */
     .card {
       background: #1a1d24;
       border: 1px solid #2a2e39;
@@ -73,7 +78,7 @@
       font-size: 18px;
     }
 
-    /* หัวข้อและเนื้อหา 4 ส่วนตามที่กำหนด */
+    /* หัวข้อและเนื้อหา 4 ส่วนตามที่จัดเรียง */
     .section-title {
       font-weight: 600;
       color: #ffffff;
@@ -99,6 +104,7 @@
       color: #d4af37;
     }
 
+    /* กล่องกรอกเบอร์โทรศัพท์ยืนยันสิทธิ์ */
     .register-box {
       background: #1a1d24;
       border: 1px solid #d4af37;
@@ -160,9 +166,7 @@
       margin-top: 12px;
     }
 
-    /* ============================================================ */
-    /* 2. ระบบป้องกันการแคปหน้าจอ (Anti-Screenshot Curtain) */
-    /* ============================================================ */
+    /* 2. ม่านจอดำป้องกันการแคปหน้าจอ */
     #blackout-curtain {
       display: none;
       position: fixed;
@@ -175,7 +179,7 @@
       pointer-events: all;
     }
 
-    /* 3. ลายน้ำระบุตัวตนจางๆ ซ้อนบนการ์ด ป้องกันการเอามือถือเครื่องอื่นมาถ่ายจอ */
+    /* 3. ลายน้ำระบุตัวตนจางๆ ซ้อนบนการ์ด */
     .watermark-overlay {
       position: absolute;
       top: 0;
@@ -192,7 +196,7 @@
       word-break: break-all;
     }
 
-    /* 4. ป้องกันการสั่งพิมพ์ หรือบันทึกเป็น PDF ในคอมพิวเตอร์ */
+    /* 4. ป้องกันการสั่งพิมพ์ หรือบันทึกหน้าเว็บเป็น PDF */
     @media print {
       body {
         background-color: #000000 !important;
@@ -205,27 +209,28 @@
   </style>
 </head>
 <body oncontextmenu="return false;">
-  <!-- ม่านดำสนิทที่จะบังหน้าจอทันทีเมื่อเกิดเหตุการณ์แคปภาพ -->
+  <!-- ม่านจอดำที่จะบังหน้าจอทันทีเมื่อเกิดเหตุการณ์แคปภาพหรือสลับแอป -->
   <div id="blackout-curtain"></div>
 
   <div class="container">
     <div id="status-box">กำลังเริ่มต้นระบบ...</div>
 
-    <!-- ส่วนกรอกเบอร์โทรยืนยันสิทธิ์ -->
+    <!-- ส่วนที่ 1: กล่องกรอกเบอร์โทรยืนยันสิทธิ์ครั้งแรก -->
     <div id="register-section" style="display: none;">
       <div class="register-box">
         <div style="font-size: 40px; margin-bottom: 8px;">📱</div>
         <h3>ยืนยันสิทธิ์การเข้าถึงคู่มือ</h3>
         <p>กรุณากรอก <b>เบอร์โทรศัพท์</b> ที่ใช้ในการสั่งซื้อ<br>เพื่อเปิดใช้งานคู่มือบูชาประจำตัวของคุณ</p>
         
-        <input type="tel" id="input-phone" class="input-phone" placeholder="เช่น 0839028526" maxlength="10">
+        <!-- ตัวอย่างเบอร์โทรเปลี่ยนเป็น 0123456789 เรียบร้อยแล้ว -->
+        <input type="tel" id="input-phone" class="input-phone" placeholder="เช่น 0123456789" maxlength="10">
         <br>
         <button id="btn-submit" class="btn-submit" onclick="submitPhone()">ยืนยันเบอร์โทรศัพท์</button>
         <div id="register-error" class="error-text"></div>
       </div>
     </div>
     
-    <!-- ส่วนแสดงคู่มือเมื่อมีสิทธิ์แล้ว -->
+    <!-- ส่วนที่ 2: ส่วนแสดงผลคู่มือเมื่อตรวจสอบสิทธิ์สำเร็จ -->
     <div id="content" style="display: none;">
       <div class="header">
         <h2>คู่มือการบูชาเฉพาะบุคคล</h2>
@@ -241,27 +246,26 @@
     // ==================================================================
     const MY_LIFF_ID = "2011794620-dxoRmHEn"; 
     
-    // ⚠️ นำ Web App URL ของคุณ (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
+    // อัปเดตลิงก์ Web App URL ของ Google Apps Script ที่ระบุมาเรียบร้อยแล้ว
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyP_XWE3gjb7Pa58YdVoyIXZwLTHLDg2ZgnQXd6DYNheP_kYSvwaIRkmFFWpAAuRMa0/exec"; 
 
     let globalUserId = "";
     const curtain = document.getElementById('blackout-curtain');
 
     // ==================================================================
-    // 🛡️ ระบบป้องกันการแคปหน้าจอ (ทั้งคอมพิวเตอร์และมือถือ)
+    // 🛡️ ระบบป้องกันการแคปหน้าจอ (ทำงานทั้งบนคอมพิวเตอร์และมือถือ)
     // ==================================================================
     function activateBlackout() {
       curtain.style.display = 'block';
     }
 
     function deactivateBlackout() {
-      // หน่วงเวลาเล็กน้อยก่อนปลดม่านดำเพื่อความปลอดภัย
       setTimeout(() => {
         curtain.style.display = 'none';
       }, 300);
     }
 
-    // A. ป้องกันบนมือถือและคอม: เมื่อสลับหน้าต่าง, พับหน้าจอ หรือเปิดแถบเมนูแคปภาพ
+    // A. ทำงานเมื่อสลับหน้าต่าง, พับหน้าจอ หรือเปิดแถบเมนู
     window.addEventListener('blur', activateBlackout);
     window.addEventListener('focus', deactivateBlackout);
     document.addEventListener('visibilitychange', () => {
@@ -272,11 +276,10 @@
       }
     });
 
-    // B. ป้องกันบนคอมพิวเตอร์: ดักจับปุ่ม PrintScreen, Snipping Tool, Mac Screenshot (Cmd+Shift+3/4/5)
+    // B. ดักจับคีย์ลัดแคปภาพบนคอมพิวเตอร์ (PrintScreen, Mac Cmd+Shift+3/4/5)
     window.addEventListener('keyup', (e) => {
       if (e.key === 'PrintScreen' || e.keyCode === 44) {
         activateBlackout();
-        // ล้างข้อมูลในคลิปบอร์ดทันที
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText('');
         }
@@ -285,19 +288,18 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      // ดักจับ Windows: Win+Shift+S หรือ Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5' || e.key === 's' || e.key === 'S')) {
         activateBlackout();
         setTimeout(deactivateBlackout, 2000);
       }
     });
 
-    // C. ดักจับเมื่อเมาส์หลุดออกจากขอบหน้าต่างเบราว์เซอร์ (มักเกิดตอนเปิดโปรแกรมแคปจอในคอม)
+    // C. ดักจับเมื่อเมาส์หลุดออกจากขอบหน้าต่างเบราว์เซอร์
     document.addEventListener('mouseleave', activateBlackout);
     document.addEventListener('mouseenter', deactivateBlackout);
 
     /**
-     * ฟังก์ชันส่งคำขอข้อมูลผ่าน JSONP (ข้ามข้อจำกัด Safari)
+     * ฟังก์ชันส่งคำขอข้อมูลผ่าน JSONP (แก้ปัญหา Safari / iPhone ติดบล็อก)
      */
     function fetchJSONP(url) {
       return new Promise((resolve, reject) => {
@@ -370,7 +372,7 @@
     }
 
     /**
-     * ฟังก์ชันส่งเบอร์โทรไปผูกกับคอลัมน์ B
+     * ฟังก์ชันส่งเบอร์โทรไปผูกกับ LINE User ID ในคอลัมน์ B
      */
     async function submitPhone() {
       const phoneInput = document.getElementById('input-phone');
@@ -419,7 +421,7 @@
       const container = document.getElementById('guide-list');
       container.innerHTML = '';
 
-      // ข้อความลายน้ำป้องกันการถ่ายภาพ
+      // ข้อความลายน้ำระบุตัวตนป้องกันการนำมือถือเครื่องอื่นมาถ่ายภาพ
       const watermarkText = `สิทธิ์เฉพาะคุณ ${res.customerName} (${res.customerPhone || ''}) ห้ามบันทึกภาพ `;
       const repeatedWatermark = watermarkText.repeat(30);
 
@@ -451,6 +453,7 @@
       document.getElementById('content').style.display = 'block';
     }
 
+    // เริ่มต้นระบบ
     main();
   </script>
 </body>
