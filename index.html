@@ -1,12 +1,11 @@
 <!-- ==================================================================== -->
-<!-- ไฟล์: index.html (แก้ปัญหา CSS ตกขอบ + เปิดช่องกรอกเบอร์โทรทันที) -->
+<!-- ไฟล์: index.html (แสดงผล 4 หัวข้อ + ระบบป้องกันการแคปหน้าจอคอมและมือถือ) -->
 <!-- ==================================================================== -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- ป้องกัน Browser แคชไฟล์เก่า -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -16,13 +15,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
   
   <style>
-    /* 1. ป้องกันการคัดลอกข้อความและคลิกขวา */
+    /* 1. ป้องกันการคลุมดำ คัดลอกข้อความ ลากรูป และคลิกขวา */
     * {
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
+      -webkit-user-select: none !important;
+      -moz-user-select: none !important;
+      -ms-user-select: none !important;
+      user-select: none !important;
+      -webkit-touch-callout: none !important;
     }
 
     body {
@@ -31,11 +30,16 @@
       color: #e6e6e6;
       margin: 0;
       padding: 20px;
+      position: relative;
+      min-height: 100vh;
+      box-sizing: border-box;
     }
 
     .container {
       max-width: 500px;
       margin: auto;
+      position: relative;
+      z-index: 2;
     }
 
     .header {
@@ -53,32 +57,39 @@
       background: #1a1d24;
       border: 1px solid #2a2e39;
       border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 18px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 20px 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      position: relative;
+      overflow: hidden;
     }
 
     .card h3 {
       color: #f3c644;
       margin-top: 0;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       border-bottom: 1px solid #2f3442;
-      padding-bottom: 8px;
+      padding-bottom: 10px;
+      font-size: 18px;
     }
 
+    /* หัวข้อและเนื้อหา 4 ส่วนตามที่กำหนด */
     .section-title {
       font-weight: 600;
       color: #ffffff;
-      margin-top: 12px;
+      margin-top: 14px;
       margin-bottom: 4px;
-      font-size: 14px;
+      font-size: 14.5px;
+      display: flex;
+      align-items: center;
     }
 
     .section-content {
       font-size: 13.5px;
-      line-height: 1.6;
+      line-height: 1.65;
       color: #cfcfcf;
       white-space: pre-line;
+      padding-left: 2px;
     }
 
     #status-box {
@@ -88,7 +99,6 @@
       color: #d4af37;
     }
 
-    /* กล่องฟอร์มกรอกเบอร์โทรศัพท์ */
     .register-box {
       background: #1a1d24;
       border: 1px solid #d4af37;
@@ -150,7 +160,9 @@
       margin-top: 12px;
     }
 
-    /* 2. ม่านจอดำเมื่อพยายามแคปหน้าจอหรือสลับแอป */
+    /* ============================================================ */
+    /* 2. ระบบป้องกันการแคปหน้าจอ (Anti-Screenshot Curtain) */
+    /* ============================================================ */
     #blackout-curtain {
       display: none;
       position: fixed;
@@ -158,10 +170,29 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: #000000;
-      z-index: 999999;
+      background-color: #000000 !important;
+      z-index: 9999999;
+      pointer-events: all;
     }
 
+    /* 3. ลายน้ำระบุตัวตนจางๆ ซ้อนบนการ์ด ป้องกันการเอามือถือเครื่องอื่นมาถ่ายจอ */
+    .watermark-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.05;
+      font-size: 12px;
+      line-height: 28px;
+      color: #ffffff;
+      overflow: hidden;
+      word-break: break-all;
+    }
+
+    /* 4. ป้องกันการสั่งพิมพ์ หรือบันทึกเป็น PDF ในคอมพิวเตอร์ */
     @media print {
       body {
         background-color: #000000 !important;
@@ -174,7 +205,7 @@
   </style>
 </head>
 <body oncontextmenu="return false;">
-  <!-- ม่านจอดำป้องกันการแคปภาพ -->
+  <!-- ม่านดำสนิทที่จะบังหน้าจอทันทีเมื่อเกิดเหตุการณ์แคปภาพ -->
   <div id="blackout-curtain"></div>
 
   <div class="container">
@@ -187,7 +218,7 @@
         <h3>ยืนยันสิทธิ์การเข้าถึงคู่มือ</h3>
         <p>กรุณากรอก <b>เบอร์โทรศัพท์</b> ที่ใช้ในการสั่งซื้อ<br>เพื่อเปิดใช้งานคู่มือบูชาประจำตัวของคุณ</p>
         
-        <input type="tel" id="input-phone" class="input-phone" placeholder="เช่น 0123456789" maxlength="10">
+        <input type="tel" id="input-phone" class="input-phone" placeholder="เช่น 0839028526" maxlength="10">
         <br>
         <button id="btn-submit" class="btn-submit" onclick="submitPhone()">ยืนยันเบอร์โทรศัพท์</button>
         <div id="register-error" class="error-text"></div>
@@ -211,22 +242,62 @@
     const MY_LIFF_ID = "2011794620-dxoRmHEn"; 
     
     // ⚠️ นำ Web App URL ของคุณ (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyP_XWE3gjb7Pa58YdVoyIXZwLTHLDg2ZgnQXd6DYNheP_kYSvwaIRkmFFWpAAuRMa0/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
 
     let globalUserId = "";
-
-    // ระบบล็อกจอดำเมื่อหลุดโฟกัส / แคปจอ
     const curtain = document.getElementById('blackout-curtain');
-    function hideScreen() { curtain.style.display = 'block'; }
-    function showScreen() { curtain.style.display = 'none'; }
-    window.addEventListener('blur', hideScreen);
-    window.addEventListener('focus', showScreen);
+
+    // ==================================================================
+    // 🛡️ ระบบป้องกันการแคปหน้าจอ (ทั้งคอมพิวเตอร์และมือถือ)
+    // ==================================================================
+    function activateBlackout() {
+      curtain.style.display = 'block';
+    }
+
+    function deactivateBlackout() {
+      // หน่วงเวลาเล็กน้อยก่อนปลดม่านดำเพื่อความปลอดภัย
+      setTimeout(() => {
+        curtain.style.display = 'none';
+      }, 300);
+    }
+
+    // A. ป้องกันบนมือถือและคอม: เมื่อสลับหน้าต่าง, พับหน้าจอ หรือเปิดแถบเมนูแคปภาพ
+    window.addEventListener('blur', activateBlackout);
+    window.addEventListener('focus', deactivateBlackout);
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) hideScreen(); else showScreen();
+      if (document.hidden) {
+        activateBlackout();
+      } else {
+        deactivateBlackout();
+      }
     });
 
+    // B. ป้องกันบนคอมพิวเตอร์: ดักจับปุ่ม PrintScreen, Snipping Tool, Mac Screenshot (Cmd+Shift+3/4/5)
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'PrintScreen' || e.keyCode === 44) {
+        activateBlackout();
+        // ล้างข้อมูลในคลิปบอร์ดทันที
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText('');
+        }
+        setTimeout(deactivateBlackout, 1500);
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      // ดักจับ Windows: Win+Shift+S หรือ Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5' || e.key === 's' || e.key === 'S')) {
+        activateBlackout();
+        setTimeout(deactivateBlackout, 2000);
+      }
+    });
+
+    // C. ดักจับเมื่อเมาส์หลุดออกจากขอบหน้าต่างเบราว์เซอร์ (มักเกิดตอนเปิดโปรแกรมแคปจอในคอม)
+    document.addEventListener('mouseleave', activateBlackout);
+    document.addEventListener('mouseenter', deactivateBlackout);
+
     /**
-     * ดึงข้อมูลผ่าน JSONP ข้ามข้อจำกัด Safari
+     * ฟังก์ชันส่งคำขอข้อมูลผ่าน JSONP (ข้ามข้อจำกัด Safari)
      */
     function fetchJSONP(url) {
       return new Promise((resolve, reject) => {
@@ -263,7 +334,7 @@
     }
 
     /**
-     * เริ่มต้นการทำงาน
+     * ฟังก์ชันหลัก
      */
     async function main() {
       const statusBox = document.getElementById('status-box');
@@ -282,20 +353,16 @@
 
         statusBox.innerText = "กำลังตรวจสอบสิทธิ์...";
         
-        // สอบถามสิทธิ์ไปยัง Google Apps Script
         const res = await fetchJSONP(`${GAS_API_URL}?action=getGuides&userId=${encodeURIComponent(globalUserId)}`);
         statusBox.style.display = 'none';
 
         if (res && res.status === 'success') {
-          // หากมีสิทธิ์แล้ว ให้แสดงคู่มือทันที
           renderGuides(res);
         } else {
-          // ⚠️ หากไม่พบ LINE ID ในชีท ไม่ว่าสถานะใด ให้เปิดหน้าจอกรอกเบอร์โทรทันที
           document.getElementById('register-section').style.display = 'block';
         }
 
       } catch (err) {
-        // หากเชื่อมต่อผิดพลาด ให้เปิดหน้าจอกรอกเบอร์โทรเป็นทางเลือกสำรองทันที
         statusBox.style.display = 'none';
         document.getElementById('register-section').style.display = 'block';
         document.getElementById('register-error').innerText = 'ระบบกำลังเปิดการยืนยันด้วยเบอร์โทรศัพท์สำรอง';
@@ -303,7 +370,7 @@
     }
 
     /**
-     * ส่งเบอร์โทรศัพท์ไปบันทึกลงในคอลัมน์ B
+     * ฟังก์ชันส่งเบอร์โทรไปผูกกับคอลัมน์ B
      */
     async function submitPhone() {
       const phoneInput = document.getElementById('input-phone');
@@ -328,7 +395,6 @@
         submitBtn.innerText = 'ยืนยันเบอร์โทรศัพท์';
 
         if (res && res.status === 'success') {
-          // ผูกสำเร็จ ซ่อนฟอร์ม แล้วแสดงการ์ดเครื่องราง
           document.getElementById('register-section').style.display = 'none';
           renderGuides(res);
         } else {
@@ -341,19 +407,42 @@
       }
     }
 
+    /**
+     * ฟังก์ชันแสดงผลคู่มือ 4 ส่วน:
+     * A: ชื่อเครื่องราง (${item.title})
+     * B: คุณสมบัติเครื่องราง (${item.attributes})
+     * C: วิธีใช้งานและการขอพร (${item.howToUse})
+     * D: วิธีเก็บรักษาและข้อควรระวัง (${item.howToCare})
+     */
     function renderGuides(res) {
       document.getElementById('user-greeting').innerText = `สำหรับ: คุณ${res.customerName}`;
       const container = document.getElementById('guide-list');
       container.innerHTML = '';
 
+      // ข้อความลายน้ำป้องกันการถ่ายภาพ
+      const watermarkText = `สิทธิ์เฉพาะคุณ ${res.customerName} (${res.customerPhone || ''}) ห้ามบันทึกภาพ `;
+      const repeatedWatermark = watermarkText.repeat(30);
+
       res.guides.forEach(item => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
+          <!-- ลายน้ำจางๆ ซ้อนด้านหลังการ์ด -->
+          <div class="watermark-overlay">${repeatedWatermark}</div>
+          
+          <!-- A: ชื่อเครื่องราง -->
           <h3>✨ ${item.title}</h3>
-          <div class="section-title">📌 วิธีการใช้งานและการบูชา:</div>
+          
+          <!-- B: คุณสมบัติเครื่องราง -->
+          <div class="section-title">🔮 คุณสมบัติเครื่องราง:</div>
+          <div class="section-content">${item.attributes}</div>
+
+          <!-- C: วิธีใช้งานและการขอพร -->
+          <div class="section-title">📌 วิธีใช้งานและการขอพร:</div>
           <div class="section-content">${item.howToUse}</div>
-          <div class="section-title">🛡️ การเก็บรักษาและข้อควรระวัง:</div>
+
+          <!-- D: วิธีเก็บรักษาและข้อควรระวัง -->
+          <div class="section-title">🛡️ วิธีเก็บรักษาและข้อควรระวัง:</div>
           <div class="section-content">${item.howToCare}</div>
         `;
         container.appendChild(card);
